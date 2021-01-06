@@ -115,7 +115,13 @@ mkfs: mkfs.c fs.h
 ## clean up the junk
 
 clean: 
-	rm -f *.o *.d *.a vectors.S bootblock entryother initcode initcode.out kernel *.img mkfs .gdbinit _*
+	rm -f *.o *.d *.a *.zip *.img _* vectors.S bootblock entryother initcode initcode.out kernel mkfs .gdbinit
+
+## submission
+
+submission: 
+	make -s clean
+	zip -9qjX xv6.zip *
 
 ## emulate and debug
 
