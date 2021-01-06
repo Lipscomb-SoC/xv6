@@ -9,7 +9,6 @@ AS = $(TOOLPREFIX)gas
 AR = $(TOOLPREFIX)ar
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
-OBJDUMP = $(TOOLPREFIX)objdump
 CFLAGS = -static -Og -Wall -MD -g -m32 -Werror -DXV6 -no-pie
 CFLAGS += -fno-pic -fno-builtin -fno-strict-aliasing -fno-stack-protector -fno-omit-frame-pointer -fno-pie 
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
@@ -29,7 +28,6 @@ bootblock: bootasm.S bootmain.c
 	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -I. -c bootmain.c
 	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c bootasm.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7C00 -o bootblock.o bootasm.o bootmain.o
-	$(OBJDUMP) -S bootblock.o > bootblock.asm
 	$(OBJCOPY) -S -O binary -j .text bootblock.o bootblock
 	./sign.pl bootblock
 
@@ -37,13 +35,11 @@ entryother: entryother.S
 	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c entryother.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7000 -o bootblockother.o entryother.o
 	$(OBJCOPY) -S -O binary -j .text bootblockother.o entryother
-	$(OBJDUMP) -S bootblockother.o > entryother.asm
 
 initcode: initcode.S
 	$(CC) $(CFLAGS) -nostdinc -I. -c initcode.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o initcode.out initcode.o
 	$(OBJCOPY) -S -O binary initcode.out initcode
-	$(OBJDUMP) -S initcode.o > initcode.asm
 
 OBJS = \
 	bio.o\
@@ -77,10 +73,8 @@ OBJS = \
 
 kernel: $(OBJS) entry.o entryother initcode kernel.ld
 	$(LD) $(LDFLAGS) -T kernel.ld -o kernel entry.o $(OBJS) -b binary initcode entryother
-	$(OBJDUMP) -S kernel > kernel.asm
-	$(OBJDUMP) -t kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernel.sym
 
-## user space programs
+## user-space library
 
 vectors.S: vectors.pl
 	./vectors.pl > vectors.S
@@ -88,12 +82,7 @@ vectors.S: vectors.pl
 userlib.a: ulib.o usys.o printf.o umalloc.o
 	$(AR) cr $@ $^
 
-_%: %.o userlib.a
-	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
-	$(OBJDUMP) -S $@ > $*.asm
-	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
-
-## file system disk image
+## user-space programs
 
 UPROGS=\
 	_cat\
@@ -112,18 +101,23 @@ UPROGS=\
 	_wc\
 	_zombie\
 
+_%: %.o userlib.a
+	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
+
+## file system disk image
+
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
 
 mkfs: mkfs.c fs.h
 	gcc -Werror -Wall -o mkfs mkfs.c
 
-clean: 
-	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
-	*.o *.d *.asm *.sym *.a vectors.S bootblock entryother \
-	initcode initcode.out kernel *.img mkfs .gdbinit _*
+## clean up the junk
 
-## emulator and debugging
+clean: 
+	rm -f *.o *.d *.a vectors.S bootblock entryother initcode initcode.out kernel *.img mkfs .gdbinit _*
+
+## emulate and debug
 
 QEMUOPTS = -nographic -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp 2 -m 512 -net none
 
