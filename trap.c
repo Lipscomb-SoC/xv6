@@ -32,7 +32,6 @@ idtinit(void)
   lidt(idt, sizeof(idt));
 }
 
-//PAGEBREAK: 41
 void
 trap(struct trapframe *tf)
 {
@@ -77,8 +76,6 @@ trap(struct trapframe *tf)
             cpuid(), tf->cs, tf->eip);
     lapiceoi();
     break;
-
-  //PAGEBREAK: 13
   default:
     if(myproc() == 0 || (tf->cs&3) == 0){
       // In kernel, it must be our mistake.
