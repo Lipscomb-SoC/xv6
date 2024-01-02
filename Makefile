@@ -2,20 +2,22 @@
 # TOOLPREFIX = i386-jos-elf-
 # TOOLPREFIX = i386-elf-
 TOOLPREFIX = 
+# TODO remove TOOLPREFIX
 
 QEMU = qemu-system-i386
 CC = $(TOOLPREFIX)gcc
-AS = $(TOOLPREFIX)gas
 AR = $(TOOLPREFIX)ar
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 CFLAGS = -static -Og -Wall -MD -g -m32 -Werror -DXV6 -no-pie
 CFLAGS += -fno-pic -fno-builtin -fno-strict-aliasing -fno-stack-protector -fno-omit-frame-pointer -fno-pie 
-ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
+# TODO move more flags here?
 LDFLAGS += -m elf_i386
 
 .PRECIOUS: %.o
 -include *.d
+
+# TODO separate OS from user programs (directories)
 
 ## OS disk image (primary target)
 
@@ -108,6 +110,7 @@ _%: %.o userlib.a
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
 
+# TODO use $(GCC)?
 mkfs: mkfs.c fs.h
 	gcc -Werror -Wall -o mkfs mkfs.c
 
@@ -115,6 +118,7 @@ mkfs: mkfs.c fs.h
 
 clean: 
 	rm -f *.o *.d *.a *.zip *.img _* vectors.S bootblock entryother initcode initcode.out kernel mkfs .gdbinit
+# TODO even clean more (especially macOS junk)
 
 ## submission
 

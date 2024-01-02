@@ -1,6 +1,8 @@
 #include "syscall.h"
 #include "traps.h"
 
+// TODO do not use macros, generate using C program?
+
 #define SYSCALL(name) \
   .globl name; \
   name: \
