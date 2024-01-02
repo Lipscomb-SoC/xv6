@@ -1,23 +1,18 @@
-# On Max OS X (or others?) try one of these settings:
-# TOOLPREFIX = i386-jos-elf-
-# TOOLPREFIX = i386-elf-
-TOOLPREFIX = 
-# TODO remove TOOLPREFIX
-
-QEMU = qemu-system-i386
-CC = $(TOOLPREFIX)gcc
-AR = $(TOOLPREFIX)ar
-LD = $(TOOLPREFIX)ld
-OBJCOPY = $(TOOLPREFIX)objcopy
+MAKEFLAGS += --no-builtin-rules
 CFLAGS = -static -Og -Wall -MD -g -m32 -Werror -DXV6 -no-pie
 CFLAGS += -fno-pic -fno-builtin -fno-strict-aliasing -fno-stack-protector -fno-omit-frame-pointer -fno-pie 
-# TODO move more flags here?
 LDFLAGS += -m elf_i386
+
+all: fs.img xv6.img
 
 .PRECIOUS: %.o
 -include *.d
 
-# TODO separate OS from user programs (directories)
+%.o: %.c
+	gcc $(CFLAGS) -c $^
+
+%.o: %.S
+	gcc $(CFLAGS) -c $^
 
 ## OS disk image (primary target)
 
@@ -26,22 +21,28 @@ xv6.img: bootblock kernel
 	dd if=bootblock of=xv6.img conv=notrunc
 	dd if=kernel of=xv6.img seek=1 conv=notrunc
 
-bootblock: bootasm.S bootmain.c
-	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -I. -c bootmain.c
-	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c bootasm.S
-	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7C00 -o bootblock.o bootasm.o bootmain.o
-	$(OBJCOPY) -S -O binary -j .text bootblock.o bootblock
-	./sign.pl bootblock
+bootblock: bootasm.S bootmain.c signbb
+	gcc $(CFLAGS) -O -nostdinc -I. -c bootmain.c
+	gcc $(CFLAGS) -nostdinc -I. -c bootasm.S
+	ld $(LDFLAGS) -N -e start -Ttext 0x7C00 -o bootblock.o bootasm.o bootmain.o
+	objcopy -S -O binary -j .text bootblock.o bootblock
+	./signbb bootblock
 
 entryother: entryother.S
-	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c entryother.S
-	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7000 -o bootblockother.o entryother.o
-	$(OBJCOPY) -S -O binary -j .text bootblockother.o entryother
+	gcc $(CFLAGS) -nostdinc -I. -c entryother.S
+	ld $(LDFLAGS) -N -e start -Ttext 0x7000 -o bootblockother.o entryother.o
+	objcopy -S -O binary -j .text bootblockother.o entryother
 
 initcode: initcode.S
-	$(CC) $(CFLAGS) -nostdinc -I. -c initcode.S
-	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o initcode.out initcode.o
-	$(OBJCOPY) -S -O binary initcode.out initcode
+	gcc $(CFLAGS) -nostdinc -I. -c initcode.S
+	ld $(LDFLAGS) -N -e start -Ttext 0 -o initcode.out initcode.o
+	objcopy -S -O binary initcode.out initcode
+
+signbb: signbb.c
+	gcc -Werror -Wall -o $@ $<
+
+vectors.S: vectors.py
+	python3 vectors.py > vectors.S
 
 OBJS = \
 	bio.o\
@@ -74,17 +75,15 @@ OBJS = \
 	vm.o\
 
 kernel: $(OBJS) entry.o entryother initcode kernel.ld
-	$(LD) $(LDFLAGS) -T kernel.ld -o kernel entry.o $(OBJS) -b binary initcode entryother
+	ld $(LDFLAGS) -T kernel.ld -o kernel entry.o $(OBJS) -b binary initcode entryother
 
 ## user-space library
 
-vectors.S: vectors.pl
-	./vectors.pl > vectors.S
-
 userlib.a: ulib.o usys.o printf.o umalloc.o
-	$(AR) cr $@ $^
+	ar cr $@ $^
 
 ## user-space programs
+# TODO separate OS from user programs (use directories)
 
 UPROGS=\
 	_cat\
@@ -103,22 +102,20 @@ UPROGS=\
 	_zombie\
 
 _%: %.o userlib.a
-	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
+	ld $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
 
 ## file system disk image
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
 
-# TODO use $(GCC)?
 mkfs: mkfs.c fs.h
-	gcc -Werror -Wall -o mkfs mkfs.c
+	gcc -Werror -Wall -o $@ $<
 
 ## clean up the junk
 
 clean: 
-	rm -f *.o *.d *.a *.zip *.img _* vectors.S bootblock entryother initcode initcode.out kernel mkfs .gdbinit
-# TODO even clean more (especially macOS junk)
+	rm -f *.o *.d *.a *.zip *.img _* vectors.S bootblock entryother initcode initcode.out kernel signbb mkfs .gdbinit
 
 ## submission
 
@@ -128,6 +125,7 @@ submission:
 
 ## emulate and debug
 
+QEMU = qemu-system-i386
 QEMUOPTS = -nographic -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp 2 -m 512 -net none
 
 qemu: fs.img xv6.img
