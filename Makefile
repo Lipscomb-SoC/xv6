@@ -115,7 +115,7 @@ mkfs: mkfs.c fs.h
 ## clean up the junk
 
 clean: 
-	rm -f *.o *.d *.a *.zip *.img _* vectors.S bootblock entryother initcode initcode.out kernel signbb mkfs .gdbinit
+	rm -f *.o *.d *.a *.zip *.img _* *.gch vectors.S bootblock entryother initcode initcode.out kernel signbb mkfs .gdbinit
 
 ## submission
 

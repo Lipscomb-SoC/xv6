@@ -106,7 +106,7 @@ piperead(struct pipe *p, char *addr, int n)
       release(&p->lock);
       return -1;
     }
-    sleep(&p->nread, &p->lock)
+    sleep(&p->nread, &p->lock);
   }
   for(i = 0; i < n; i++){
     if(p->nread == p->nwrite)
