@@ -18,9 +18,9 @@ seginit(void)
   struct cpu *c;
 
   // Map "logical" addresses to virtual addresses using identity map.
-  // Cannot share a CODE descriptor for both kernel and user
-  // because it would have to have DPL_USR, but the CPU forbids
-  // an interrupt from CPL=0 to DPL=3.
+  // Cannot share a CODE descriptor for both kernel and user because 
+  // it would have to have DPL_USR, but the CPU forbids an interrupt 
+  // from CPL=0 to DPL=3.
   c = &cpus[cpuid()];
   c->gdt[SEG_KCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, 0);
   c->gdt[SEG_KDATA] = SEG(STA_W, 0, 0xffffffff, 0);
@@ -29,9 +29,8 @@ seginit(void)
   lgdt(c->gdt, sizeof(c->gdt));
 }
 
-// Return the address of the PTE in page table pgdir
-// that corresponds to virtual address va.  If alloc!=0,
-// create any required page table pages.
+// Return the address of PTE in page table pgdir that corresponds to 
+// virtual address va. If alloc!=0 create any required page table pages.
 static pte_t *
 walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
@@ -55,8 +54,7 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
 }
 
 // Create PTEs for virtual addresses starting at va that refer to
-// physical addresses starting at pa. va and size might not
-// be page-aligned.
+// physical addresses starting at pa. va and size might not be page-aligned.
 static int
 mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
@@ -278,8 +276,7 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   return newsz;
 }
 
-// Free a page table and all the physical memory pages
-// in the user part.
+// Free a page table and all the user physical memory pages.
 void
 freevm(pde_t *pgdir)
 {
@@ -310,8 +307,7 @@ clearpteu(pde_t *pgdir, char *uva)
   *pte &= ~PTE_U;
 }
 
-// Given a parent process's page table, create a copy
-// of it for a child.
+// Given a parent process's page table, create a copy of it.
 pde_t*
 copyuvm(pde_t *pgdir, uint sz)
 {

@@ -4,7 +4,6 @@
 #include "syscall.h"
 #include "traps.h"
 
-
 # exec(init, argv)
 .globl start
 start:

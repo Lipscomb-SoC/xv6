@@ -72,8 +72,8 @@ void            kinit2(void*, void*);
 void            kbdintr(void);
 
 // lapic.c
+extern volatile uint* lapic;
 int             lapicid(void);
-extern volatile uint*    lapic;
 void            lapiceoi(void);
 void            lapicinit(void);
 void            lapicstartap(uchar, uint);
@@ -157,10 +157,10 @@ void            syscall(void);
 void            timerinit(void);
 
 // trap.c
+extern struct spinlock tickslock;
 void            idtinit(void);
 extern uint     ticks;
 void            tvinit(void);
-extern struct spinlock tickslock;
 
 // uart.c
 void            uartinit(void);

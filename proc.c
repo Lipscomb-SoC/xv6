@@ -389,7 +389,7 @@ yield(void)
 }
 
 // A fork child's very first scheduling by scheduler()
-// will swtch here.  "Return" to user space.
+// will swtch here. "Return" to user space.
 void
 forkret(void)
 {
@@ -399,8 +399,8 @@ forkret(void)
 
   if (first) {
     // Some initialization functions must be run in the context
-    // of a regular process (e.g., they call sleep), and thus cannot
-    // be run from main().
+    // of a regular process (e.g., they call sleep), and thus 
+    // cannot be run from main().
     first = 0;
     iinit(ROOTDEV);
     initlog(ROOTDEV);
@@ -422,12 +422,10 @@ sleep(void *chan, struct spinlock *lk)
   if(lk == 0)
     panic("sleep without lock");
 
-  // Must acquire ptable.lock in order to
-  // change p->state and then call sched.
-  // Once we hold ptable.lock, we can be
-  // guaranteed that we won't miss any wakeup
-  // (wakeup runs with ptable.lock locked),
-  // so it's okay to release lock.
+  // Must acquire ptable.lock in order to change p->state and 
+  // then call sched. Once we hold ptable.lock, we can be
+  // guaranteed that we won't miss any wakeup (wakeup runs 
+  // with ptable.lock locked), so it's okay to release lock.
   if(lk != &ptable.lock){
     acquire(&ptable.lock);
     release(lk);
@@ -469,9 +467,8 @@ wakeup(void *chan)
   release(&ptable.lock);
 }
 
-// Kill the process with the given pid.
-// Process won't exit until it returns
-// to user space (see trap in trap.c).
+// Kill the process with the given pid. Process won't exit 
+// until it returns to user space (see trap in trap.c).
 int
 kill(int pid)
 {
@@ -492,9 +489,8 @@ kill(int pid)
   return -1;
 }
 
-// Print a process listing to console.  For debugging.
-// Runs when user types ^P on console.
-// No lock to avoid wedging a stuck machine further.
+// Print a process listing to console. Runs when user types 
+// ^P on console. No lock to allow debugging a stuck machine.
 void
 procdump(void)
 {

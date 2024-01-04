@@ -9,10 +9,10 @@ all: fs.img xv6.img
 -include *.d
 
 %.o: %.c
-	gcc $(CFLAGS) -c $^
+	gcc $(CFLAGS) -c $<
 
 %.o: %.S
-	gcc $(CFLAGS) -c $^
+	gcc $(CFLAGS) -c $<
 
 ## OS disk image (primary target)
 
@@ -132,7 +132,7 @@ qemu: fs.img xv6.img
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit: .gdbinit.tmpl
-	sed "s/localhost:1234/localhost:27777/" < $^ > $@
+	sed "s/localhost:1234/localhost:27777/" < $< > $@
 
 qemu-gdb: fs.img xv6.img .gdbinit
 	@echo "*** Now run 'gdb'."

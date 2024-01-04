@@ -17,7 +17,7 @@ swtch:
   pushl %esi
   pushl %edi
 
-  # Switch stacks
+  # Switch stacks (see proc.h)
   movl %esp, (%eax)
   movl %edx, %esp
 
