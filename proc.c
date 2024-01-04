@@ -420,14 +420,14 @@ sleep(void *chan, struct spinlock *lk)
     panic("sleep");
 
   if(lk == 0)
-    panic("sleep without lk");
+    panic("sleep without lock");
 
   // Must acquire ptable.lock in order to
   // change p->state and then call sched.
   // Once we hold ptable.lock, we can be
   // guaranteed that we won't miss any wakeup
   // (wakeup runs with ptable.lock locked),
-  // so it's okay to release lk.
+  // so it's okay to release lock.
   if(lk != &ptable.lock){
     acquire(&ptable.lock);
     release(lk);
@@ -499,12 +499,12 @@ void
 procdump(void)
 {
   static char *states[] = {
-  [UNUSED]    "unused",
-  [EMBRYO]    "embryo",
-  [SLEEPING]  "sleep ",
-  [RUNNABLE]  "runble",
-  [RUNNING]   "run   ",
-  [ZOMBIE]    "zombie"
+    [UNUSED]    "unused",
+    [EMBRYO]    "embryo",
+    [SLEEPING]  "sleep ",
+    [RUNNABLE]  "runble",
+    [RUNNING]   "run   ",
+    [ZOMBIE]    "zombie"
   };
   int i;
   struct proc *p;

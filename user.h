@@ -1,27 +1,29 @@
 struct stat;
-struct rtcdate;
 
 // system calls
 int fork(void);
+int exec(char*, char**);
 int exit(void) __attribute__((noreturn));
 int wait(void);
-int pipe(int*);
-int write(int, const void*, int);
-int read(int, void*, int);
-int close(int);
 int kill(int);
-int exec(char*, char**);
+int getpid(void);
+int sleep(int);
+char* sbrk(int);
+
 int open(const char*, int);
-int mknod(const char*, short, short);
-int unlink(const char*);
+int read(int, void*, int);
+int write(int, const void*, int);
+int close(int);
+int pipe(int*);
+int dup(int);
+
 int fstat(int fd, struct stat*);
+int mknod(const char*, short, short);
 int link(const char*, const char*);
+int unlink(const char*);
 int mkdir(const char*);
 int chdir(const char*);
-int dup(int);
-int getpid(void);
-char* sbrk(int);
-int sleep(int);
+
 int uptime(void);
 
 // ulib.c
