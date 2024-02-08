@@ -100,6 +100,10 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
+	_layout\
+	_cpu\
+	_mem\
+	_batch\
 
 _%: %.o userlib.a
 	ld $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
@@ -107,7 +111,7 @@ _%: %.o userlib.a
 ## file system disk image
 
 fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+	./mkfs fs.img README batch.txt $(UPROGS)
 
 mkfs: mkfs.c fs.h
 	gcc -Werror -Wall -o $@ $<
