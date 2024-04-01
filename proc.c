@@ -522,4 +522,5 @@ procdump(void)
     }
     cprintf("\n");
   }
+  cprintf("%d free pages\n",kpages());
 }

@@ -67,6 +67,7 @@ char*           kalloc(void);
 void            kfree(char*);
 void            kinit1(void*, void*);
 void            kinit2(void*, void*);
+int             kpages();
 
 // kbd.c
 void            kbdintr(void);
@@ -169,19 +170,21 @@ void            uartputc(int);
 
 // vm.c
 void            seginit(void);
-void            kvmalloc(void);
+pte_t *         walkpgdir(pde_t *pgdir, const void *va, int alloc);
+int             mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
 pde_t*          setupkvm(void);
-char*           uva2ka(pde_t*, char*);
+void            kvmalloc(void);
+void            switchkvm(void);
+void            switchuvm(struct proc*);
+void            inituvm(pde_t*, char*, uint);
+int             loaduvm(pde_t*, char*, struct inode*, uint, uint);
 int             allocuvm(pde_t*, uint, uint);
 int             deallocuvm(pde_t*, uint, uint);
 void            freevm(pde_t*);
-void            inituvm(pde_t*, char*, uint);
-int             loaduvm(pde_t*, char*, struct inode*, uint, uint);
-pde_t*          copyuvm(pde_t*, uint);
-void            switchuvm(struct proc*);
-void            switchkvm(void);
-int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
+pde_t*          copyuvm(pde_t*, uint);
+char*           uva2ka(pde_t*, char*);
+int             copyout(pde_t*, uint, void*, uint);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

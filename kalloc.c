@@ -9,19 +9,23 @@
 #include "mmu.h"
 #include "spinlock.h"
 
-void freerange(void *vstart, void *vend);
 extern char end[]; // first address after kernel loaded from ELF file
                    // defined by the kernel linker script in kernel.ld
-
-struct run {
-  struct run *next;
-};
 
 struct {
   struct spinlock lock;
   int use_lock;
-  struct run *freelist;
+  char *freelist;
 } kmem;
+
+static void
+freerange(void *vstart, void *vend)
+{
+  char *p;
+  p = (char*)PGROUNDUP((uint)vstart);
+  for(; p + PGSIZE <= (char*)vend; p += PGSIZE)
+    kfree(p);
+}
 
 // Initialization happens in two phases.
 // 1. main() calls kinit1() while still using entrypgdir to place just
@@ -43,24 +47,12 @@ kinit2(void *vstart, void *vend)
   kmem.use_lock = 1;
 }
 
-void
-freerange(void *vstart, void *vend)
-{
-  char *p;
-  p = (char*)PGROUNDUP((uint)vstart);
-  for(; p + PGSIZE <= (char*)vend; p += PGSIZE)
-    kfree(p);
-}
-
-// Free the page of physical memory pointed at by v,
-// which normally should have been returned by a
-// call to kalloc().  (The exception is when
+// Free the page of physical memory pointed at by v, which normally should 
+// have been returned by a call to kalloc(). (The exception is when
 // initializing the allocator; see kinit above.)
 void
 kfree(char *v)
 {
-  struct run *r;
-
   if((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
@@ -69,28 +61,39 @@ kfree(char *v)
 
   if(kmem.use_lock)
     acquire(&kmem.lock);
-  r = (struct run*)v;
-  r->next = kmem.freelist;
-  kmem.freelist = r;
+  *(char **)v = kmem.freelist;
+  kmem.freelist = v;
   if(kmem.use_lock)
     release(&kmem.lock);
 }
 
-// Allocate one 4096-byte page of physical memory.
-// Returns a pointer that the kernel can use.
-// Returns 0 if the memory cannot be allocated.
+// Allocate one 4096-byte page of physical memory. Returns a pointer that 
+// the kernel can use. Returns 0 if a page is not available.
 char*
 kalloc(void)
 {
-  struct run *r;
-
   if(kmem.use_lock)
     acquire(&kmem.lock);
-  r = kmem.freelist;
+  char *r = kmem.freelist;
   if(r)
-    kmem.freelist = r->next;
+    kmem.freelist = *(char **)r;
   if(kmem.use_lock)
     release(&kmem.lock);
-  return (char*)r;
+  return r;
 }
 
+// Return the number of free pages available.
+int kpages()
+{
+  if(kmem.use_lock)
+    acquire(&kmem.lock);
+  char *r = kmem.freelist;
+  int pages = 0;
+  while(r) {
+    r = *(char **)r;
+    pages++;
+  }
+  if(kmem.use_lock)
+    release(&kmem.lock);
+  return pages;
+}
