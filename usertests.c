@@ -1494,6 +1494,7 @@ sbrktest(void)
   }
 
   // can we read the kernel's memory?
+  printf(stdout,"expect several trap 14s:\n");
   for(a = (char*)(KERNBASE); a < (char*) (KERNBASE+2000000); a += 50000){
     ppid = getpid();
     pid = fork();
@@ -1515,6 +1516,7 @@ sbrktest(void)
     printf(1, "pipe() failed\n");
     exit();
   }
+  printf(stdout,"expect out of memory messages:\n");
   for(i = 0; i < sizeof(pids)/sizeof(pids[0]); i++){
     if((pids[i] = fork()) == 0){
       // allocate a lot of memory
@@ -1566,8 +1568,12 @@ validatetest(void)
   uint p;
 
   printf(stdout, "validate test\n");
-  hi = 1100*1024;
-
+  hi = 50*1024;
+  int fd = open("dummy",O_CREATE|O_WRONLY);
+  if (fd < 0) {
+    printf(stdout,"validate open failed\n");
+    exit();
+  }
   for(p = 0; p <= (uint)hi; p += 4096){
     if((pid = fork()) == 0){
       // try to crash the kernel by passing in a badly placed integer
@@ -1584,8 +1590,20 @@ validatetest(void)
       printf(stdout, "link should not succeed\n");
       exit();
     }
+
+    // try to crash the kernel by passing in a bad buffer
+    int r = write(fd,(char *)(p+1000),100);
+    if (r != -1 && r != 100){
+      printf(stdout, "write returned an unexpected value\n");
+      exit();
+    }
   }
 
+  if (close(fd) < 0) {
+    printf(stdout, "validate close failed\n");
+    exit();
+  }
+  unlink("dummy");
   printf(stdout, "validate ok\n");
 }
 
@@ -1706,6 +1724,7 @@ uio()
   int pid;
 
   printf(1, "uio test\n");
+  printf(stdout,"expect a trap 13:\n");
   pid = fork();
   if(pid == 0){
     port = RTC_ADDR;
