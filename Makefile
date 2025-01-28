@@ -1,7 +1,13 @@
 MAKEFLAGS += --no-builtin-rules
 CFLAGS = -static -Og -Wall -MD -g -m32 -Werror -DXV6 -no-pie
-CFLAGS += -fno-pic -fno-builtin -fno-strict-aliasing -fno-stack-protector -fno-omit-frame-pointer -fno-pie 
+CFLAGS += -fno-pic -fno-builtin -fno-strict-aliasing -fno-stack-protector -fno-omit-frame-pointer -fno-pie -Wno-infinite-recursion
+CFLAGS += -Wno-infinite-recursion
 LDFLAGS += -m elf_i386
+
+## ld 2.42 (Ubuntu 24) is more picky, we must disable some warnings
+ifeq "$(shell if [ `ld -v|cut -d. -f2` -ge 42 ]; then echo true; fi)" "true"
+LDFLAGS += --no-warn-execstack --no-warn-rwx-segments
+endif
 
 all: fs.img xv6.img
 
@@ -99,7 +105,7 @@ UPROGS=\
 	_sh\
 	_usertests\
 	_wc\
-	_zombie\
+	_zombie
 
 _%: %.o userlib.a
 	ld $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
