@@ -1,7 +1,7 @@
 MAKEFLAGS += --no-builtin-rules
 CFLAGS = -static -Og -Wall -MD -g -m32 -Werror -DXV6 -no-pie
-CFLAGS += -fno-pic -fno-builtin -fno-strict-aliasing -fno-stack-protector -fno-omit-frame-pointer -fno-pie -Wno-infinite-recursion
-CFLAGS += -Wno-infinite-recursion
+CFLAGS += -fno-pic -fno-builtin -fno-strict-aliasing -fno-stack-protector -fno-omit-frame-pointer -fno-pie
+CFLAGS += -Wno-infinite-recursion -fno-asynchronous-unwind-tables
 LDFLAGS += -m elf_i386
 
 ## ld 2.42 (Ubuntu 24) is more picky, we must disable some warnings
