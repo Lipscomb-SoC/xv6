@@ -108,7 +108,9 @@ UPROGS=\
 	_zombie
 
 _%: %.o userlib.a
-	ld $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
+	ld $(LDFLAGS) -n -T user.ld -e main -o $@ $^
+
+# possible change: ld $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
 
 ## file system disk image
 
