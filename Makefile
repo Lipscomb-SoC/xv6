@@ -1,10 +1,10 @@
 MAKEFLAGS += --no-builtin-rules
-CFLAGS = -static -Og -Wall -MD -g -m32 -Werror -DXV6 -no-pie
-CFLAGS += -fno-pic -fno-builtin -fno-strict-aliasing -fno-stack-protector -fno-omit-frame-pointer -fno-pie
-CFLAGS += -Wno-infinite-recursion -fno-asynchronous-unwind-tables
+CFLAGS = -m32 -static -Og -g -MD -DXV6
+CFLAGS += -Wall -Werror -Wno-infinite-recursion
+CFLAGS += -fno-pic -fno-pie -fno-builtin -fno-stack-protector -fno-strict-aliasing -fno-omit-frame-pointer -fno-asynchronous-unwind-tables
 LDFLAGS += -m elf_i386
 
-## ld 2.42 (Ubuntu 24) is more picky, we must disable some warnings
+## ld 2.42 (Ubuntu 24) is more picky about security, we must disable some warnings
 ifeq "$(shell if [ `ld -v|cut -d. -f2` -ge 42 ]; then echo true; fi)" "true"
 LDFLAGS += --no-warn-execstack --no-warn-rwx-segments
 endif
@@ -20,7 +20,7 @@ all: fs.img xv6.img
 %.o: %.S
 	gcc $(CFLAGS) -c $<
 
-## OS disk image (primary target)
+## OS disk image
 
 xv6.img: bootblock kernel
 	dd if=/dev/zero of=xv6.img count=10000
@@ -89,7 +89,6 @@ userlib.a: ulib.o usys.o printf.o umalloc.o
 	ar cr $@ $^
 
 ## user-space programs
-# TODO separate OS from user programs (use directories)
 
 UPROGS=\
 	_cat\
@@ -108,9 +107,7 @@ UPROGS=\
 	_zombie
 
 _%: %.o userlib.a
-	ld $(LDFLAGS) -n -T user.ld -e main -o $@ $^
-
-# possible change: ld $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
+	ld $(LDFLAGS) -T user.ld -n -o $@ $^
 
 ## file system disk image
 
@@ -123,7 +120,7 @@ mkfs: mkfs.c fs.h
 ## clean up the junk
 
 clean: 
-	rm -f *.o *.d *.a *.zip *.img _* *.gch vectors.S bootblock entryother initcode initcode.out kernel signbb mkfs .gdbinit
+	rm -f *.o *.d *.a *.zip *.img _* *.gch vectors.S bootblock entryother initcode initcode.out kernel signbb mkfs
 
 ## submission
 
@@ -138,9 +135,6 @@ QEMUOPTS = -nographic -drive file=fs.img,index=1,media=disk,format=raw -drive fi
 
 qemu: fs.img xv6.img
 	$(QEMU) $(QEMUOPTS)
-
-.gdbinit: .gdbinit.tmpl
-	sed "s/localhost:1234/localhost:27777/" < $< > $@
 
 qemu-gdb: fs.img xv6.img .gdbinit
 	@echo "*** Now run 'gdb'."

@@ -208,6 +208,12 @@ fork(void)
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
+  // WARN: Must read np->pid BEFORE setting np->state to RUNNABLE. Once we set 
+  // np->state = RUNNABLE, another CPU might immediately run the child process, 
+  // which could exit and get reused with a new pid, all before we return. Even 
+  // saving np->pid before the state change isn't enough, since the compiler could 
+  // reorder the read. The acquire() call below provides a compiler barrier that 
+  // prevents reordering of the pid read past the state write.
   pid = np->pid;
 
   acquire(&ptable.lock);

@@ -15,4 +15,4 @@ kernel
 kernelmemfs
 mkfs
 signbb
-.gdbinit
+CLAUDE.md

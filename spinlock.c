@@ -18,9 +18,22 @@ initlock(struct spinlock *lk, char *name)
 }
 
 // Acquire the lock.
-// Loops (spins) until the lock is acquired.
-// Holding a lock for a long time may cause
-// other CPUs to waste time spinning to acquire it.
+// Loops (spins) until the lock is acquired. Holding a lock for a long time 
+// may cause other CPUs to waste time spinning to acquire it.
+//
+// Memory ordering notes: The x86's processor-ordering memory model matches
+// spinlocks well. For the pattern:
+//   CPU0: A; release(lk);
+//   CPU1: acquire(lk); B;
+// We need: (1) all reads in B see writes in A, and (2) reads in A don't see
+// writes in B. The x86 guarantees writes in A reach memory before the write
+// of lk->locked=0 in release(), and CPU1 observes the unlock only after
+// observing earlier writes. So reads in B see effects of A.
+//
+// For condition (2), the Intel spec requires a serialization instruction in
+// release() to prevent reads in A from moving after the unlock. No existing
+// Intel SMP processor actually reorders reads after writes, but the spec 
+// allows it, so future processors might need explicit barriers.
 void
 acquire(struct spinlock *lk)
 {
@@ -34,7 +47,7 @@ acquire(struct spinlock *lk)
 
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that the critical section's memory
-  // references happen after the lock is acquired.
+  // references happen after the lock is acquired. (see above)
   __sync_synchronize();
 
   // Record info about lock acquisition for debugging.
@@ -96,7 +109,6 @@ holding(struct spinlock *lock)
   return r;
 }
 
-
 // Pushcli/popcli are like cli/sti except that they are matched:
 // it takes two popcli to undo two pushcli.  Also, if interrupts
 // are off, then pushcli, popcli leaves them off.
@@ -107,6 +119,17 @@ pushcli(void)
   int eflags;
 
   eflags = readeflags();
+  // WARN: Must call cli() BEFORE accessing mycpu()->ncli. If interrupts are 
+  // enabled, we could read mycpu(), get rescheduled to a different CPU, then 
+  // incorrectly increment the old CPU's ncli counter. By disabling interrupts 
+  // first, we guarantee we stay on the same CPU for the entire critical section.
+  //
+  // NOTE: There is a harmless race condition here. If interrupts are enabled,
+  // readeflags() can execute, then the process can be preempted and rescheduled
+  // on another CPU (possibly with interrupts disabled). When it resumes, it will
+  // record the OLD CPU's interrupt state (enabled). This doesn't matter because
+  // if it was safe to run with interrupts enabled before the context switch, it's
+  // still safe (and arguably more correct) to run with them enabled afterward.
   cli();
   if(mycpu()->ncli == 0)
     mycpu()->intena = eflags & FL_IF;
