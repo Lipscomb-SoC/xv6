@@ -8,7 +8,7 @@
 #define N  1000
 
 void
-printf(int fd, const char *s, ...)
+printf(int fd, const char *s)
 {
   write(fd, s, strlen(s));
 }
@@ -29,7 +29,7 @@ forktest(void)
   }
 
   if(n == N){
-    printf(1, "fork claimed to work N times!\n", N);
+    printf(1, "fork claimed to work N times!\n");
     exit();
   }
 
