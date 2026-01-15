@@ -14,6 +14,7 @@ SECTIONS
     *(.rodata*)
     *(.bss*)
   }
+  _end = .;
 
   /DISCARD/ : {
     *(.comment)
